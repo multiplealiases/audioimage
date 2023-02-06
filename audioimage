@@ -19,13 +19,14 @@ $(usage)
 
 Defaults shown in [].
 Slice options:
--s, --size         size of each slice [16384x1]
+-s, --size           size of each slice [16384x1]
 Effect options:
--e, --effect       ImageMagick effect chain []
+-e, --effect         ImageMagick effect chain []
 Other options:
--j, --jobs         number of jobs to use [$(nproc)]
--o, --output       output prefix [filename]
--h, --help         this help
+-j, --jobs           number of jobs to use [$(nproc)]
+-o, --output-prefix  output prefix [filename]
+-O, --output         output name (overrides -o)
+-h, --help           this help
 EOF
 }
 
@@ -40,7 +41,7 @@ function file_none(){
     exit 4
 }
 
-function audiorescale(){
+function audioeffect(){
     base="$(basename "$1")"
     tmpsliceaudio="$2"
     sliceres="$3"
@@ -48,18 +49,22 @@ function audiorescale(){
     convert -depth 16 -size "$sliceres" GRAY:"$1" "${effect[@]}" GRAY:"$tmpsliceaudio"/"$base"
     rm "$1"
 }
-export -f audiorescale
+export -f audioeffect
 
 function cleanup(){
     rm -r "$tmplist" "$tmpslices" "$tmpsliceaudio"
 }
 
-ARGS="$(getopt --options o:,h,s:,e:,j: --long size:,effect:,jobs:,output:,help -- "$@")"
+ARGS="$(getopt --options o:,O:,h,s:,e:,j: --long size:,effect:,jobs:,output:,output-prefix:,help -- "$@")"
 eval set -- "$ARGS"
 while true; do
         case "$1" in
-        -o | --output)
+        -o | --output-prefix)
             output_prefix="$2"
+            shift 2
+            ;;
+        -O | --output)
+            output_name="$2"
             shift 2
             ;;
         -h | --help)
@@ -111,7 +116,7 @@ rate="$(ffprobe -v error -select_streams a -of default=noprint_wrappers=1:nokey=
 filename="$(basename "$filepath")"
 base_filename="${filename%.*}"
 output_prefix="${output_prefix:-$base_filename}"
-output_name="$output_prefix"-"$sliceres"-"$effect"
+output_name="${output_name-:output_prefix-sliceres-effect}"
 
 tmpslices="$(mktemp -d)"
 tmplist="$(mktemp)"
@@ -127,6 +132,6 @@ rm big
 popd
 
 find "$tmpslices" -type f | sort > "$tmplist"
-parallel --progress -j"$jobs" --eta audiorescale \{1\} "$tmpsliceaudio" "$sliceres" "'$effect'" :::: "$tmplist"
+parallel --progress -j"$jobs" --eta audioeffect \{1\} "$tmpsliceaudio" "$sliceres" "'$effect'" :::: "$tmplist"
 
 find "$tmpsliceaudio" -type f | sort | xargs cat | sox -c "$channels" -r "$rate" -t u16 - "$output_name".flac
