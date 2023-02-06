@@ -116,7 +116,8 @@ rate="$(ffprobe -v error -select_streams a -of default=noprint_wrappers=1:nokey=
 filename="$(basename "$filepath")"
 base_filename="${filename%.*}"
 output_prefix="${output_prefix:-$base_filename}"
-output_name="${output_name-:output_prefix-sliceres-effect}"
+blanked_name="$output_prefix"-"$sliceres"-"$effect"
+output_name="${output_name-:$blanked_name}"
 
 tmpslices="$(mktemp -d)"
 tmplist="$(mktemp)"
