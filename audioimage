@@ -117,7 +117,7 @@ filename="$(basename "$filepath")"
 base_filename="${filename%.*}"
 output_prefix="${output_prefix:-$base_filename}"
 blanked_name="$output_prefix"-"$sliceres"-"$effect"
-output_name="${output_name-:$blanked_name}"
+output_name="${output_name:-$blanked_name}"
 
 tmpslices="$(mktemp -d)"
 tmplist="$(mktemp)"
